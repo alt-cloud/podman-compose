@@ -1,0 +1,251 @@
+#!/bin/sh
+
+format() {
+  echo "$0 
+  [--type(-t) <тип-разворачивания>]\
+  [--namespace(-n) <namespace>']
+  [--dir(-d) каталог-манифестов]\
+  [--file(-f) <имя_файла\
+  <имя_POD'а>\
+  <имя-docker-compose-файла>
+  " >&2
+}
+
+PV='{
+  "apiVersion": "v1",
+  "kind": "PersistentVolume",
+  "metadata": {
+    "name": "task-pv-volume",
+    "labels": {
+      "type": "local"
+    }
+  },
+  "spec": {
+    "storageClassName": "manual",
+    "capacity": {
+      "storage": "10Gi"
+    },
+    "accessModes": [
+      "ReadWriteOnce"
+    ],
+    "hostPath": {
+      "path": "/mnt/PersistentVolume"
+    }
+  }
+}
+'
+
+# Анализ флагов
+if ! args=$(/usr/bin/getopt -n $0 \
+  -o t:n:d: \
+  --long type: \
+  --long namespace: \
+  --long dir: \
+  --long pvpath: \
+  --long pvname: \
+  --long pvsize: \
+  -- $@
+  )
+then
+  format;
+  exit $?
+fi
+
+set -- $args
+while [ "$1" != '--' ]
+do
+  case $1 in
+    '--type'|'-t') type=${2:1:-1};;
+    '--namespace' | '-n') namespace=${2:1:-1};;
+    '--dir'|'-d') dir=${2:1:-1};;
+    '--pvpath') pvpath=${2:1:-1};;
+    '--pvname') pvname=${2:1:-1};;
+    '--pvsize') pvsize=${2:1:-1};;
+  esac
+  shift; shift
+done
+shift
+if [ $# -ne 2 ]
+then
+  echo "Invalid number of parameters" >&2
+  format
+  exit 1;
+fi
+podName=${1:1:-1} composeFile=${2:1:-1}
+if [ "${podName:0:3}" == 'pod' ]
+then
+  kubeName=${podName:3}
+  if [ "${kubeName:0:1}" == '-' -o "${kubeName:0:1}" == '_' ]
+  then
+    kubeName=${kubeName:1}
+  fi
+fi
+
+if [ -z "$type" ]; then type='pod'; fi
+if [ -z "$namespace" ]; then namespace="default"; fi
+if [ -z "$dir" ]; then dir='manifests'; fi
+
+echo "TYPE=$type"
+case $type in
+  'p'|'pod') type='Pod';;
+  'r'|'replica') type='ReplicaSet';;
+  'd'|'deployment') type='Deployment';;
+  *) echo "Unknown type. Valid values: p, pod, r, replica, d, deployment" >&2;
+    exit 1;
+esac
+
+
+echo "type=$type namespace=$namespace dir=$dir podName=$podName composeFile=$composeFile" >&2
+
+#exit
+
+if [ ! -f $composeFile ]
+then
+  echo "File $composeFile missing" >&2
+  exit 1
+fi
+tmpFile=$(mktemp)
+podFile=$(mktemp)
+
+namespaceDir="$dir/ns/$namespace"
+deployDir="$namespaceDir/kind/$type"
+serviceDir="$deployDir/Service"
+volumeDir="$namespaceDir/PersistentVolumeClaim"
+mkdir -p $dir $deployDir $serviceDir $volumeDir
+
+if [ -n "$pvpath" -o -n "$pvname" -o -n "$pvsize" ]
+then
+  if [ -z "$pvpath" ]; then pvpath="/mnt/PersistentVolume/"; fi
+  if [ -z "$pvname" ]; then pvname=""task-pv-volume; fi
+  if [ -z "$pvsize" ]; then pvsize="10G"; fi
+  pvDir="$dir/PersistentVolume"
+  mkdir -p $pvDir
+  echo $PV |
+  yq -y "
+    .metadata.name=\"$pvname\" |
+    .spec.capacity.storage=\"$pvsize\" |
+    .spec.hostPath.path=\"$pvpath\"" > $pvDir/PV.yml  
+fi
+
+# Сформировать POD-манифест
+if ! podman kube generate --service $podName  > $tmpFile 
+then
+  echo "POD with name $podName is missing" >&2
+  rm -f $tmpFile
+  exit 1
+fi
+
+# Сформировать список скалярных yml-элементов, имеющих в конце name(Name)
+listNamesPath=$(
+cat $tmpFile |
+yq -r '. |
+select(.kind=="Pod") |
+path(..| select(scalars)) | 
+select((tostring) | (match("name\"]$";"i"))) | 
+map(if type == "number" then "["+tostring+"]" else . end) | 
+join(".")' 
+)
+
+#echo $listNamesPath
+#exit
+
+# Сформировать jq-запрос на замену символов _ на символы - в выбранных элементах
+q="select(.kind==\"Pod\")|
+  .metadata.name=\"$kubeName\"|
+  .metadata.labels.app=\"$kubeName\"
+"
+sep='|'
+for namePath in $listNamesPath
+do
+  q+="$sep .$namePath = (.$namePath | split(\"_\") | join(\"-\") | ascii_downcase)"
+  # break 
+done
+# echo -ne "Q=$q"; echo
+services=$(cat $composeFile | yq '.services|keys')
+
+# Сформировать POD YML файл
+if [ $type == 'Pod' ]
+then
+  q+=" | .spec.hostAliases=[{\"ip\":\"127.0.0.1\",\"hostnames\":$services}]"
+fi
+yq -y "$q" < $tmpFile > $podFile 
+
+volumeNames=$(yq -r 'select(.kind=="Pod") | .spec.volumes.[].persistentVolumeClaim.claimName' < $tmpFile)
+for volumeName in $volumeNames
+do
+  volumeFile=$(echo $volumeName | tr '_' '-')
+  podman kube generate $volumeName | 
+  yq -y '.metadata.name=(.metadata.name|
+    split("_")|
+    join("-"))|
+    .metadata.namespace="'$namespace'"|
+    .spec.storageClassName="manual"
+    ' > $volumeDir/$volumeFile.yml
+done
+
+if [ $type == 'Pod' ]
+then
+  yq -y ".metadata.namespace=\"$namespace\"" < $podFile > $deployDir/$kubeName.yml 
+  serviceFile=$serviceDir/$kubeName.yml
+  yq -y "
+  select(.kind==\"Service\")|
+          .metadata.name=\"$kubeName\"|
+          .metadata.labels.app=\"$kubeName\"|
+          .metadata.namespace=\"$namespace\"|
+          .spec.selector.app=\"$kubeName\"
+  " < $tmpFile > $serviceFile
+
+else
+  if [ $type == 'Deployment' ]
+  then
+    for service in $(echo $services | yq -r .[])
+    do
+      echo "SERVICE=$service"
+      deploy='
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "'$service'-deployment",
+    "labels": {
+      "app": "'$service'"
+    },
+    "namespace": "'$namespace'"
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "'$service'"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "'$service'"
+        }
+      },
+      "spec": {
+        "containers": [.]
+      }
+    }
+  }
+}
+'
+      volumeMatch="[.spec.volumes[]|select(.name|match(\".*$service.*\"))]"
+      volume=$(yq "$volumeMatch" < $podFile)
+      if [ -n "$volume" -a "$volume" != "[]" ]; then deploy+="|.spec.template.spec.volumes=$volume"; fi
+      yq "
+        .spec.containers[]|
+	select(.name|match(\".*$service.*\"))|
+	$deploy
+	" < $podFile > $deployDir/$service.yml
+      # Сформировать файл сервисов
+      ports=$(yq -r '[.services.'$service'.ports[]|tostring|split(":")[-1]]|map(".port=="+.)|join(" or ")' < $composeFile)
+      yq -y "select(.kind==\"Service\")|.spec.ports=[.spec.ports[]|select($ports)]" < $tmpFile > $serviceDir/$service.yml
+
+    done
+  fi
+fi
+
+rm -f $tmpFile $podFile 
