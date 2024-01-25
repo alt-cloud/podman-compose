@@ -25,7 +25,7 @@ podman-compose-to-kube \
 
 Манифесты генерируются в каталоге, указанном параметром `--dir` (`-d`) (по умолчания каталог `manifests`).
 Каталог манифестов имеет следующую структуру:
-<pre> 
+<pre>
 manifests/
 ├── &lt;namespace1>
 │   ├── &lt;pod1Name>
@@ -69,25 +69,25 @@ manifests/
 - каталог `PersistentVolumeClaim` с YML-файлами описания запросов на внешние тома (`kind: PersistentVolumeClaim`);
 - каталог `PersistentVolume` с YML-файлами описания описание внешних локальных томов (`kind: PersistentVolume`).
 
-Файлы  каталога `PersistentVolume` описания описание внешних локальных томов имеют ссылки () на соответствующие файлы YML- описания запросов на внешние тома каталога `PersistentVolumeClaim`.
+Файлы  каталога `PersistentVolume` описания описание внешних локальных томов имеют ссылки на соответствующие файлы YML- описания запросов на внешние тома каталога `PersistentVolumeClaim`.
 
-Данный формат размещения YML-файлов манифестов позволяет разворачивать kubernetes-решение одной командой:  
-<pre> 
-kubectl apply -R -f manifests/&lt;namespace1>/&lt;podName>/Pod 
+Данный формат размещения YML-файлов манифестов позволяет разворачивать kubernetes-решение одной командой:
+<pre>
+kubectl apply -R -f manifests/&lt;namespace1>/&lt;podName>/Pod
 </pre>
 для POD-разворачивания или
-<pre> 
+<pre>
 kubectl apply -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 </pre>
 для Deployment-разворачивания.
 <br>
 <br>
 А также удалять разворачивание:
-<pre> 
-kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Pod 
+<pre>
+kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Pod
 </pre>
 для POD-разворачивания или
-<pre> 
+<pre>
 kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 </pre>
 для Deployment-разворачивания.
@@ -97,13 +97,13 @@ kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 
 **Deploy-файл типа Pod (kind: Pod)**
 
-При типе разворачивания `POD` (`--type pod` или `-t p`) в каталоге manifests/&lt;namespace>/&lt;podName>/Pod/`
-генерируется YML-файл разворачивания (`kind: Pod`) &lt;pod1Name>.yml.
+При типе разворачивания `POD` (`--type pod` или `-t p`) в каталоге `manifests/&lt;namespace>/&lt;podName>/Pod/`
+генерируется YML-файл разворачивания (`kind: Pod`) `&lt;pod1Name>.yml`.
 
-Все контейнеры `docker-compose сервисов` запускаются в рамках одного пода. 
+Все контейнеры `docker-compose сервисов` запускаются в рамках одного пода.
 Сетевое взаимодействипе между контейнерами одного стека сервисов осуществляется через интерфейс localhost (127.0.0.1).
-В связи  с этим в YML-файл добавляется описание:  
-<pre> 
+В связи  с этим в YML-файл добавляется описание:
+<pre>
   hostAliases:
     - ip: 127.0.0.1
       hostnames:
@@ -117,7 +117,7 @@ kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 
 Файл описания сервисов `<podName>.yml` генерируется в каталоге `manifests/<namespace>/<podName>/Pod/Service/`.
 Все порты docker-сервисов помещаются в один сервис с именем `<podName>` в пространстве имен `<namespace>`.
-Это обеспечивает в рамках kubernetes-кластера обращения к портам `Pod`'а по доменным именам:  
+Это обеспечивает в рамках kubernetes-кластера обращения к портам `Pod`'а по доменным именам:
 <pre>
 &lt;podName> (в рамках namespace `&lt;namespace>`)
 &lt;podName>.&lt;namespace>
@@ -126,17 +126,17 @@ kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 
 **Файлы описания запросов внешних томов (kind: PersistentVolumeClaim)**
 
-Файлы описания запросов внешних томов  с именами `<podName>-<serviceName>` размещаются в каталоге 
+Файлы описания запросов внешних томов  с именами `<podName>-<serviceName>` размещаются в каталоге
 `manifests/<namespace>/<podName>/Pod/PersistentVolumeClaim/`.
-Каждый том имеет имя `<podName>-<serviceName>`. 
+Каждый том имеет имя `<podName>-<serviceName>`.
 Объем выделяемой дисковой памяти: `1Gi`.
 При необходимости после генерации YML-файлов этот параметр можно изменить.
 
 **Файлы описания локальных томов (kind: PersistentVolume)**
 
 Для каждого запроса внешнего тома в каталоге `manifests/<namespace>/<podName>/Pod/PersistentVolume/` генерируется файл описания локального тома с именем `<namespace>-<podName>-<serviceName>.yml`.
-Каждый описываемый том имеет тот же размер (`1Gi`), что и запрос на внешний том и связывается с ним через описатель:  
-<pre> 
+Каждый описываемый том имеет тот же размер (`1Gi`), что и запрос на внешний том и связывается с ним через описатель:
+<pre>
   claimRef:
     name: &lt;podName>-&lt;serviceName>
     namespace: &ltnamespace>
@@ -150,8 +150,8 @@ kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 
 **Deploy-файлы типа Deployment (kind: Deployment)**
 
-При типе разворачивания `Deployment` (`--type deployment` или `-t d`) в каталоге manifests/&lt;namespace>/&lt;podName>/Deployment/` для каждого ` docker-compose сервиса` генерируется YML-файл разворачивания (`kind: Deployment`) `servuceName>.yml`.
-Число реплик сервисов (`spec.replicas`) устанавливается в 1-цу. 
+При типе разворачивания `Deployment` (`--type deployment` или `-t d`) в каталоге `manifests/<namespace>/<podName>/Deployment/` для каждого ` docker-compose сервиса` генерируется YML-файл разворачивания (`kind: Deployment`) `servuceName>.yml`.
+Число реплик сервисов (`spec.replicas`) устанавливается в 1-цу.
 При необходимости после генерации YML-файлов для `Stateless контейнеров` (не имеющих внешних томом или имеющие тома только на чтение) число реплик можно увеличить до необходимого значения.
 
 **Файлы описания сервисов (kind: Service)**
@@ -176,10 +176,10 @@ kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 * `--type` (`-t`) - тип разворачивания: `pod` (`p`), `deployment`(`d`). Значение по умолчанию - `pod`.
 * `--namespace` (`-n`) - kubernetes namespace. Значение по умолчанию - `default`.
 * `--dir` (`-d`) - каталог для генерируемых манифестов. Значение по умолчанию - `manifests`.
-* `-pvpath` (``) - каталог монтирования PersistentVolume томов. Значение по умолчанию - `/mnt/PersistentVolume/`.
-* `--user` (`-u`) имя rootless пользователя от которого работает kubernetesb- . Значение по умолчанию - ``.
+* `-pvpath` - каталог монтирования PersistentVolume томов. Значение по умолчанию - `/mnt/PersistentVolumes/`.
+* `--user` (`-u`) имя rootless пользователя от которого работает kubernetesb- . Значение по умолчанию - пустая строка.
 * `--group` (`-g`) - группа rootless пользователя от которого работает kubernetes. Значение по умолчанию - `=user`.
-* `--debug` - уровень отладки. Значение по умолчанию - 0.
+* `--debug` - уровень отладки. Значение по умолчанию - `0`.
 
 Позиционные параметры:
 

@@ -99,7 +99,7 @@ manifests/
 .IP "" 0
 .
 .P
-Файлы каталога \fBPersistentVolume\fR описания описание внешних локальных томов имеют ссылки () на соответствующие файлы YML\- описания запросов на внешние тома каталога \fBPersistentVolumeClaim\fR\.
+Файлы каталога \fBPersistentVolume\fR описания описание внешних локальных томов имеют ссылки на соответствующие файлы YML\- описания запросов на внешние тома каталога \fBPersistentVolumeClaim\fR\.
 .
 .P
 Данный формат размещения YML\-файлов манифестов позволяет разворачивать kubernetes\-решение одной командой:
@@ -169,7 +169,7 @@ kubectl delete \-R \-f manifests/<namespace1>/<podName>/Deployment
 \fBDeploy\-файл типа Pod (kind: Pod)\fR
 .
 .P
-При типе разворачивания \fBPOD\fR (\fB\-\-type pod\fR или \fB\-t p\fR) в каталоге manifests/<namespace>/<podName>/Pod/\fBгенерируется YML\-файл разворачивания (\fRkind: Pod`) <pod1Name>\.yml\.
+При типе разворачивания \fBPOD\fR (\fB\-\-type pod\fR или \fB\-t p\fR) в каталоге \fBmanifests/&lt;namespace>/&lt;podName>/Pod/\fR генерируется YML\-файл разворачивания (\fBkind: Pod\fR) \fB&lt;pod1Name>\.yml\fR\.
 .
 .P
 Все контейнеры \fBdocker\-compose сервисов\fR запускаются в рамках одного пода\. Сетевое взаимодействипе между контейнерами одного стека сервисов осуществляется через интерфейс localhost (127\.0\.0\.1)\. В связи с этим в YML\-файл добавляется описание:
@@ -247,7 +247,7 @@ kubectl delete \-R \-f manifests/<namespace1>/<podName>/Deployment
 \fBDeploy\-файлы типа Deployment (kind: Deployment)\fR
 .
 .P
-При типе разворачивания \fBDeployment\fR (\fB\-\-type deployment\fR или \fB\-t d\fR) в каталоге manifests/<namespace>/<podName>/Deployment/\fBдля каждого\fR docker\-compose сервиса\fBгенерируется YML\-файл разворачивания (\fRkind: Deployment\fB)\fRservuceName>\.yml\fB\. Число реплик сервисов (\fRspec\.replicas\fB) устанавливается в 1\-цу\. При необходимости после генерации YML\-файлов для\fRStateless контейнеров` (не имеющих внешних томом или имеющие тома только на чтение) число реплик можно увеличить до необходимого значения\.
+При типе разворачивания \fBDeployment\fR (\fB\-\-type deployment\fR или \fB\-t d\fR) в каталоге \fBmanifests/<namespace>/<podName>/Deployment/\fR для каждого \fBdocker\-compose сервиса\fR генерируется YML\-файл разворачивания (\fBkind: Deployment\fR) \fBservuceName>\.yml\fR\. Число реплик сервисов (\fBspec\.replicas\fR) устанавливается в 1\-цу\. При необходимости после генерации YML\-файлов для \fBStateless контейнеров\fR (не имеющих внешних томом или имеющие тома только на чтение) число реплик можно увеличить до необходимого значения\.
 .
 .P
 \fBФайлы описания сервисов (kind: Service)\fR
@@ -277,16 +277,16 @@ kubectl delete \-R \-f manifests/<namespace1>/<podName>/Deployment
 \fB\-\-dir\fR (\fB\-d\fR) \- каталог для генерируемых манифестов\. Значение по умолчанию \- \fBmanifests\fR\.
 .
 .IP "\(bu" 4
-\fB\-pvpath\fR (\fB`) \- каталог монтирования PersistentVolume томов\. Значение по умолчанию \-\fR/mnt/PersistentVolume/`\.
+\fB\-pvpath\fR \- каталог монтирования PersistentVolume томов\. Значение по умолчанию \- \fB/mnt/PersistentVolumes/\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-user\fR (\fB\-u\fR) имя rootless пользователя от которого работает kubernetesb\- \. Значение по умолчанию \- ``\.
+\fB\-\-user\fR (\fB\-u\fR) имя rootless пользователя от которого работает kubernetesb\- \. Значение по умолчанию \- пустая строка\.
 .
 .IP "\(bu" 4
 \fB\-\-group\fR (\fB\-g\fR) \- группа rootless пользователя от которого работает kubernetes\. Значение по умолчанию \- \fB=user\fR\.
 .
 .IP "\(bu" 4
-\fB\-\-debug\fR \- уровень отладки\. Значение по умолчанию \- 0\.
+\fB\-\-debug\fR \- уровень отладки\. Значение по умолчанию \- \fB0\fR\.
 .
 .IP "" 0
 .
