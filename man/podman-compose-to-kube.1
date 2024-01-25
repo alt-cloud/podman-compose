@@ -169,7 +169,15 @@ kubectl delete \-R \-f manifests/<namespace1>/<podName>/Deployment
 \fBDeploy\-файл типа Pod (kind: Pod)\fR
 .
 .P
+<<<<<<< HEAD
 При типе разворачивания \fBPOD\fR (\fB\-\-type pod\fR или \fB\-t p\fR) в каталоге \fBmanifests/&lt;namespace>/&lt;podName>/Pod/\fR генерируется YML\-файл разворачивания (\fBkind: Pod\fR) \fB&lt;pod1Name>\.yml\fR\.
+=======
+<<<<<<< HEAD
+При типе разворачивания \fBPOD\fR (\fB\-\-type pod\fR или \fB\-t p\fR) в каталоге \fBmanifests/&lt;namespace>/&lt;podName>/Pod/\fR генерируется YML\-файл разворачивания (\fBkind: Pod\fR) \fB&lt;pod1Name>\.yml\fR\.
+=======
+При типе разворачивания \fBPOD\fR (\fB\-\-type pod\fR или \fB\-t p\fR) в каталоге \fBmanifests/<namespace>/<podName>/Pod/\fR генерируется YML\-файл разворачивания (\fBkind: Pod\fR) \fB<pod1Name>\.yml\fR\.
+>>>>>>> 82a3718 (Rename pod-to-kubemanifests to podman-compose-to-kube, complete first release script and docs)
+>>>>>>> b23dfcf (Rename pod-to-kubemanifests to podman-compose-to-kube, complete first release script and docs)
 .
 .P
 Все контейнеры \fBdocker\-compose сервисов\fR запускаются в рамках одного пода\. Сетевое взаимодействипе между контейнерами одного стека сервисов осуществляется через интерфейс localhost (127\.0\.0\.1)\. В связи с этим в YML\-файл добавляется описание:

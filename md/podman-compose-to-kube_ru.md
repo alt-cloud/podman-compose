@@ -97,8 +97,9 @@ kubectl delete -R -f manifests/&lt;namespace1>/&lt;podName>/Deployment
 
 **Deploy-файл типа Pod (kind: Pod)**
 
-При типе разворачивания `POD` (`--type pod` или `-t p`) в каталоге `manifests/&lt;namespace>/&lt;podName>/Pod/`
-генерируется YML-файл разворачивания (`kind: Pod`) `&lt;pod1Name>.yml`.
+
+При типе разворачивания `POD` (`--type pod` или `-t p`) в каталоге `manifests/<namespace>/<podName>/Pod/`
+генерируется YML-файл разворачивания (`kind: Pod`) `<pod1Name>.yml`.
 
 Все контейнеры `docker-compose сервисов` запускаются в рамках одного пода.
 Сетевое взаимодействипе между контейнерами одного стека сервисов осуществляется через интерфейс localhost (127.0.0.1).
